@@ -12,14 +12,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+    
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
-    # 파일에 실행 권한을 부여하는 단계를 추가합니다.
-        - name: Grant execute permission for gradlew
-          run: chmod +x gradlew
+        
+    # 권한 부여 및 빌드 단계 정렬 완료
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
 
-        - name: Build with Gradle
-          run: ./gradlew build
+    - name: Build with Gradle
+      run: ./gradlew build
