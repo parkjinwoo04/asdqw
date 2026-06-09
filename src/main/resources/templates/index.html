@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8"/>
+    <title>Kakao 지도 시작하기</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.js" crossorigin="anonymous"></script>
+</head>
+<body>
+<div>
+    <input id="lunch_recommend" type="button" value="맛집 추천"/>
+    <input style="display: none;" id="random_recommend" type="button" value="랜덤 추천"/>
+</div>
+
+<div id="lunch_list">
+    <!-- lunch list area -->
+</div>
+
+<!-- 카카오 appKey -->
+<script th:src="${appKey}"></script>
+
+<script>
+
+    $('#lunch_recommend').click(function () {
+        if ("geolocation" in navigator) {	/* geolocation 사용 가능 */
+            navigator.geolocation.getCurrentPosition(function (data) {
+
+                const latitude = data.coords.latitude;
+                const longitude = data.coords.longitude;
+                const page = 3; // 추후 선택할수 있게 변경
+
+                searchLunchReccomend(latitude, longitude, page);
+            }, function (error) {
+                alert(error);
+            }, {
+                enableHighAccuracy: true,
+                timeout: Infinity,
+                maximumAge: 0
+            });
+        } else {	/* geolocation 사용 불가능 */
+            alert('geolocation 사용 불가능');
+        }
+    });
+
+    function searchLunchReccomend(latitude, longitude, page) {
+
+        // 이미 한번이라도 호출했던 리스트 제거
+        $('.lunch_list_content').remove();
+
+        for (var i=1; i<parseInt(page)+1; i++) {
+            const jsonData = {
+                latitude: latitude,
+                longitude: longitude,
+                page: i
+            }
+
+            $.ajax({
+                type: "post",
+                url: "/lunch",
+                data: jsonData,
+                dataType: "json",
+                success: function (result) {
+                    const lunchDiv = $('#lunch_list');
+                    const resultList = Object.values(result)[0];
+
+                    // TODO 공통사용 스크립트 함수화 작업 필요
+                    resultList.forEach(function (item) {
+
+                        // 특정 카테고리 예외처리
+                        if (checkCategoryName(item.category_name)) {
+                            return;
+                        }
+
+                        const address = item.address_name;
+                        const url = item.place_url;
+                        const phone = item.phone;
+                        const x = item.x;
+                        const y = item.y;
+                        const name = item.place_name;
+                        const div = '<div class="lunch_list_content" ' + 'data-address=' + address + 'data-url=' + url + 'data-x=' + x + 'data-y=' + y + 'data-phone=' + phone + '>' + name + '</div>'
+                        lunchDiv.append(div);
+                    });
+
+                    $('#lunch_recommend').hide();
+                    $('#random_recommend').show();
+                },
+                error: function (e) {
+                    alert("Fail");
+                    console.log(e);
+                }
+            });
+        }
+    }
+
+    // 랜덤 추천 클릭 이벤트
+    $('#random_recommend').click(function () {
+        const tag = $('.lunch_list_content');
+        const cnt = tag.length;
+        const num = randomNum(0, cnt-1);
+
+        // 랜덤태그 1개만 남기고 hide 처리
+        tag.hide();
+        tag.eq(num).show();
+    });
+
+    /**
+     * 카테고리 명칭에 점심이 아닌 값이 포함되었는지 체크
+     * @param name 카테고리 명칭
+     * @returns {boolean}
+     */
+    function checkCategoryName(name) {
+        return (name.includes('간식') || name.includes('술집') || name.includes('레스토랑'));
+    }
+
+    /**
+     * 랜덤으로 수 추출
+     * @param min 최소값
+     * @param max 최대값
+     * @returns {*}
+     */
+    function randomNum(min, max){
+        var randNum = Math.floor(Math.random()*(max-min+1)) + min;
+        return randNum;
+    }
+
+</script>
+</body>
+</html>
